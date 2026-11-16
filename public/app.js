@@ -12,7 +12,7 @@ const api = async (path, opts) => {
   return d;
 };
 const me = () => localStorage.getItem("sr_pseudo") || "";
-const mount = (...n) => { app.replaceChildren(...n); window.scrollTo(0, 0); };
+const mount = (...n) => { app.replaceChildren(...n.filter(Boolean)); window.scrollTo(0, 0); };
 
 function home() {
   const fmt = el("select", {}, ...["1v1", "2v2", "3v3", "4v4", "5v5"].map((f) => el("option", { value: f, ...(f === "5v5" ? { selected: "" } : {}) }, f)));
