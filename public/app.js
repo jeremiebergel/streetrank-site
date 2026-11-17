@@ -40,6 +40,19 @@ async function matchPage(code) {
   const field = (id, label, attrs = {}) => (f[id] = el("input", attrs));
   const err = el("div", { class: "err" });
   const team = el("select", {}, el("option", { value: "" }, "—"), el("option", { value: "A" }, "Équipe A"), el("option", { value: "B" }, "Équipe B"));
+  f.pseudo = el("input", { value: me(), maxlength: "20" });
+  const sel = {};
+  const fillSel = () => {
+    const names = [...new Set([...d.players, (f.pseudo.value || "").trim().toLowerCase()].filter((x) => x.length >= 2))];
+    for (const [k, label] of [["t1", "1er"], ["t2", "2e"], ["t3", "3e"]]) {
+      const cur = sel[k].value;
+      sel[k].replaceChildren(el("option", { value: "" }, label + " — (personne)"), ...names.map((n) => el("option", { value: n }, n)));
+      sel[k].value = names.includes(cur) ? cur : "";
+    }
+  };
+  for (const k of ["t1", "t2", "t3"]) sel[k] = el("select", {});
+  f.pseudo.addEventListener("input", fillSel);
+  fillSel();
   const status = d.validated
     ? el("div", { class: "card" }, el("span", { class: "badge ok" }, "VALIDÉ"), el("div", { class: "big" }, `${d.score_a} – ${d.score_b}`), el("p", { class: "mut" }, "Top 3 : " + (d.podium.join(", ") || "—")))
     : el("div", { class: "card" }, el("span", { class: "badge wait" }, d.declared < 2 ? "EN ATTENTE" : "SCORES DIFFÉRENTS"),
@@ -51,14 +64,15 @@ async function matchPage(code) {
     status,
     el("h2", {}, "Déclarer le match"),
     el("div", { class: "card" },
-      el("label", {}, "Ton pseudo"), field("pseudo", "", { value: me(), maxlength: "20" }),
+      el("label", {}, "Ton pseudo"), f.pseudo,
       el("label", {}, "Ton équipe"), team,
       el("div", { class: "row" }, el("div", {}, el("label", {}, "Score A"), field("a", "", { type: "number", inputmode: "numeric", min: "0", max: "99" })), el("div", {}, el("label", {}, "Score B"), field("b", "", { type: "number", inputmode: "numeric", min: "0", max: "99" }))),
-      el("label", {}, "Top 3 du match (optionnel)"), field("t1", "", { placeholder: "1er", maxlength: "20" }), el("div", { style: "height:8px" }), field("t2", "", { placeholder: "2e", maxlength: "20" }), el("div", { style: "height:8px" }), field("t3", "", { placeholder: "3e", maxlength: "20" }),
+      el("label", {}, "Top 3 du match (optionnel)"), sel.t1, el("div", { style: "height:8px" }), sel.t2, el("div", { style: "height:8px" }), sel.t3,
+      el("p", { class: "mut", style: "font-size:13px;margin:8px 0 0" }, "La liste = les joueurs qui ont déjà déclaré ce match, plus toi."),
       el("button", { onclick: async () => {
         err.textContent = "";
         try {
-          await api(`match/${code}/declare`, { pseudo: f.pseudo.value, team: team.value, score_a: f.a.value, score_b: f.b.value, top1: f.t1.value, top2: f.t2.value, top3: f.t3.value });
+          await api(`match/${code}/declare`, { pseudo: f.pseudo.value, team: team.value, score_a: f.a.value, score_b: f.b.value, top1: sel.t1.value, top2: sel.t2.value, top3: sel.t3.value });
           localStorage.setItem("sr_pseudo", f.pseudo.value.trim());
           matchPage(code);
         } catch (e) { err.textContent = e.message; }
